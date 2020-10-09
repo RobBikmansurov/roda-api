@@ -1,0 +1,20 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    pg (1.2.3)
+    rack (2.2.3)
+    roda (3.36.0)
+      rack
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  pg
+  roda (~> 3.36)
+
+RUBY VERSION
+   ruby 2.7.1p83
+
+BUNDLED WITH
+   2.1.4
