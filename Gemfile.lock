@@ -5,13 +5,18 @@ GEM
     rack (2.2.3)
     roda (3.36.0)
       rack
+    sequel (5.37.0)
+    sequel_pg (1.14.0)
+      pg (>= 0.18.0, != 1.2.0)
+      sequel (>= 4.38.0)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  pg
   roda (~> 3.36)
+  sequel (>= 5)
+  sequel_pg (>= 1.8)
 
 RUBY VERSION
    ruby 2.7.1p83

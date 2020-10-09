@@ -3,6 +3,7 @@ curl -H "Content-Type: application/json" -X PUT -d '{"rate":"2"}' http://localho
 curl "http://localhost:9292/api/v1/posts?rating=3.5&limit=20"
 curl -H "Content-Type: application/json" -d '{"title":"post_title", "content":"post_content", "user_login":"user1", "user_ip":"192.168.1.100"}' http://localhost:9292/api/v1/posts/new
 
+curl -w "%{time_total}\n" -X PUT -d 'rate=2' http://localhost:9292/api/v1/posts/567
 
 
 

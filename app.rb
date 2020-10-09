@@ -1,8 +1,15 @@
 # frozen_string_literal: true
 
+require "sequel"
+
+database = "api"
+user     = 'api' # ENV["PGUSER"]
+password = 'api_pwd' # ENV["PGPASSWORD"]
+DB = Sequel.connect(adapter: "postgres", database: database, host: "127.0.0.1", user: user, password: password)
+
 class App < Roda
   plugin :all_verbs
-  plugin :json
+  plugin :json_parser
 
   route do |r|
     puts r.inspect
