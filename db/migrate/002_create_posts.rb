@@ -6,6 +6,8 @@ Sequel.migration do
       String :title, text: true, null: false
       String :content, text: true, null: false
       Inet :ip, null: false
+      Integer :ratings_sum, default: 0
+      Integer :ratings_count, default: 0
       foreign_key :user_id, :users
     end
   end

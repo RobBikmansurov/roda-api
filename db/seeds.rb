@@ -42,3 +42,16 @@ RATINGS_COUNT.times do
   rating: rand(1..5))
 end
 puts "Created #{RATINGS_COUNT} ratings."
+
+DB <<  <<-SQL
+  update posts 
+  set 
+    ratings_sum=rat.sum, 
+    ratings_count=rat.count 
+  from (
+    select post_id, sum(rating) sum, count(id) count 
+    from ratings 
+    group by post_id)
+  AS rat 
+  where rat.post_id = posts.id;
+SQL
