@@ -42,6 +42,10 @@ class User < Sequel::Model
   end
 end
 
+class Rating < Sequel::Model
+  one_to_many :posts
+end
+
 class App < Roda
   plugin :all_verbs
   plugin :json_parser
@@ -57,9 +61,10 @@ class App < Roda
             r.put do # PUT /api/v1/posts/:id/ -d {"rate":":rate"}
               rate = r.params['rate'].to_i
               next unless rate.positive?
-
-              puts r.params
-              "post_id=#{post_id}   rate=#{rate}"
+              
+              post_id = Post[post_id].id
+              Rating.create(post_id: post_id, rating: rate)
+              "{ data: { post_id: #{post_id}}, rating: #{rate} }\n"
             end
           end
           r.get do # GET /api/v1/posts?rating=4.5&limit=10
@@ -69,12 +74,12 @@ class App < Roda
           r.post 'create' do # POST /api/vi/posts/create
             user_id = User.find_by_login_or_create(r.params['user_login'])
             
-            @post = Post.create(
+            post = Post.create(
               user_id: user_id,
               title: r.params['title'],
               content: r.params['content'],
               ip: r.params['user_ip'])
-            "{ message: 'Post created successfully', data: { post: #{@post.to_json} } }\n"
+            "{ message: 'Post created successfully', data: { post: #{post.to_json} } }\n"
           end
         end
       end
