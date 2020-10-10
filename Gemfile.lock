@@ -1,6 +1,12 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    concurrent-ruby (1.1.7)
+    dotenv (2.7.6)
+    faker (2.14.0)
+      i18n (>= 1.6, < 2)
+    i18n (1.8.5)
+      concurrent-ruby (~> 1.0)
     pg (1.2.3)
     rack (2.2.3)
     roda (3.36.0)
@@ -14,6 +20,8 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  dotenv
+  faker
   roda (~> 3.36)
   sequel (>= 5)
   sequel_pg (>= 1.8)
