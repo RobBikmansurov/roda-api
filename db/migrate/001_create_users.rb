@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # db/migrate/001_create_users.rb
 Sequel.migration do
   change do

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # db/migrate/002_create_posts.rb
 Sequel.migration do
   change do

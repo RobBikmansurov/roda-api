@@ -1,7 +1,16 @@
-запуск rackup
-curl -H "Content-Type: application/json" -X PUT -d '{"rate":"2"}' http://localhost:9292/api/v1/posts/567
+
+`rake db:migrate`
+`rake db:seed` # initial population with data for performance testing
+
+`rackup` # start app
+
+
 curl "http://localhost:9292/api/v1/posts?rating=3.5&limit=20"
 curl -H "Content-Type: application/json" -d '{"title":"post_title", "content":"post_content", "user_login":"user1", "user_ip":"192.168.1.100"}' http://localhost:9292/api/v1/posts/new
+
+curl -H "Content-Type: application/json" -X PUT -d '{"rate":"5"}' http://localhost:9292/api/v1/posts/19
+curl -H "Content-Type: application/json" -X PUT -d '{"rate":"2"}' http://localhost:9292/api/v1/posts/33
+
 
 curl -w "%{time_total}\n" -X PUT -d 'rate=2' http://localhost:9292/api/v1/posts/567
 
@@ -14,6 +23,7 @@ curl -w "%{time_total}\n" -X PUT -d 'rate=2' http://localhost:9292/api/v1/posts/
 Требуется создать JSON API сервис на Ruby. В качестве веб-фреймворка, можете использовать sinatra, hanami, roda или что-нибудь другое, но не Ruby on Rails. Доспут к БД можете осуществлять с помощью ORM (active_record, sequel, rom), можете и без ORM, как посчитаете нужным.
 
 ## Сущности:
+
 ·    Юзер. Имеет только логин.
 ·    Пост. Принадлежит юзеру. Имеет заголовок, содержание, айпи автора (сохраняется отдельно для каждого поста).
 ·    Оценка. Принадлежит посту. Принимает значение от 1 до 5.

@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 namespace :db do
-    desc 'Loads the seed data from db/seeds.rb'
-    task :seed do
-      require_relative '../../db/seeds'
-    end
+  desc 'Loads the seed data from db/seeds.rb'
+  task :seed do
+    require_relative '../../db/seeds'
+  end
 
   namespace :migrate do
     desc 'Perform migration up to latest migration available'

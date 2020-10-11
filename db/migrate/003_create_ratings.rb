@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # db/migrate/003_create_ratings.rb
 Sequel.migration do
   change do

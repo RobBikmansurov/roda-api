@@ -37,13 +37,14 @@ puts "Created #{POSTS_COUNT} posts."
 
 ratings = DB[:ratings]
 RATINGS_COUNT.times do
- ratings.insert(
-  post_id: posts_ids.sample,
-  rating: rand(1..5))
+  ratings.insert(
+    post_id: posts_ids.sample,
+    rating: rand(1..5)
+  )
 end
 puts "Created #{RATINGS_COUNT} ratings."
 
-DB <<  <<-SQL
+DB << <<-SQL
   update posts 
   set 
     ratings_sum=rat.sum, 
