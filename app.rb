@@ -17,6 +17,11 @@ DB = Sequel.connect(adapter: 'postgres',
 class Post < Sequel::Model
   many_to_one :user
 
+  def validate
+    super
+    validates_presence [:title, :content, :user_id, :ip]
+  end
+
   def rating
     return 0 unless ratings_count.positive?
 
@@ -38,11 +43,20 @@ end
 class User < Sequel::Model
   one_to_many :posts
 
+  def validate
+    super
+    validates_presence [:login]
+    validates_unique(:login)
+  end
+
   def self.find_by_login_or_create(login)
     user = User.where(login: login).first
     return user.id unless user.nil?
 
-    User.create(login: login).id
+    user = User.new(login: login)
+    return nil unless user.valid?
+    user.save
+    user.id
   end
 
   def to_json(*_args)
@@ -52,11 +66,19 @@ end
 
 class Rating < Sequel::Model
   one_to_many :posts
+
+  def validate
+    super
+    validates_presence [:post_id, :rating]
+    validates_includes RATING_RANGE, :rating
+  end
 end
 
 class App < Roda
   plugin :all_verbs
   plugin :json_parser
+  Sequel::Model.plugin :validation_helpers
+
 
   route do |r|
     response['Content-Type'] = 'application/json'
@@ -69,20 +91,19 @@ class App < Roda
           r.on Integer do |post_id|
             r.put do # PUT /api/v1/posts/:id/ -d {"rate":":rate"}
               rate = r.params['rate'].to_i
-              next unless RATING_RANGE.include?(rate)
-
               post = Post[post_id]
-              next if post.nil?
-
-              Rating.create(post_id: post.id, rating: rate)
-              post.update(ratings_sum: (post.ratings_sum + rate),
+              rating = Rating.new(post_id: post.id, rating: rate)
+              if rating.valid?
+                rating.save
+                post.update(ratings_sum: (post.ratings_sum + rate),
                           ratings_count: (post.ratings_count + 1))
+                "{ data: { post_id: #{post.id}, rating: #{post.rating} } }\n"
+              end
 
-              "{ data: { post_id: #{post.id}, rating: #{post.rating} }\n"
             end
           end
 
-          r.get do # GET /api/v1/posts?rating=4.5&limit=10
+          r.get '' do # GET /api/v1/posts?rating=4.5&limit=10
             rating = r.params['rating']
             limit = r.params['limit'].to_i
 
@@ -106,13 +127,35 @@ class App < Roda
           r.post 'create' do # POST /api/vi/posts/create
             user_id = User.find_by_login_or_create(r.params['user_login'])
 
-            post = Post.create(
+            post = Post.new(
               user_id: user_id,
               title: r.params['title'],
               content: r.params['content'],
               ip: r.params['user_ip']
             )
-            "{ data: { post: #{post.to_json} } }\n"
+
+            if post.valid?
+              post.save
+              "{ data: { post: #{post.to_json} } }\n"
+            end
+          end
+
+          r.get 'ip_authors' do # GET /api/v1/posts/ip_authors
+            query = <<-SQL
+              select ip, array_agg(login) authors, count(*) 
+              from (
+                select ip, user_id 
+                from posts 
+                group by ip, user_id
+              ) p
+              JOIN users ON p.user_id=users.id 
+              group by ip 
+              HAVING p.count > 1;
+            SQL
+            ips = DB.fetch(query)
+            ips_a = ips.map { |ip| "{ ip: #{ip[:ip]}, authors: #{ip[:authors]} }" }.join(",\n")
+
+            "{ data: { ips: [ #{ips_a} ] } }\n"
           end
         end
       end
