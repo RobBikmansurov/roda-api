@@ -4,10 +4,10 @@ require 'sequel'
 require 'faker'
 require 'dotenv/load'
 
-USERS_COUNT = 5
-POSTS_COUNT = 20
+USERS_COUNT = 100
+POSTS_COUNT = 200_000
 RATINGS_COUNT = POSTS_COUNT / 3
-IPS_COUNT = 40
+IPS_COUNT = 50
 
 DB = Sequel.connect(adapter: 'postgres',
                     database: ENV['PGDATABASE'],
@@ -15,11 +15,14 @@ DB = Sequel.connect(adapter: 'postgres',
                     user: ENV['PGUSER'],
                     password: ENV['PGPASSWORD'])
 
+started_at = Time.now
+puts Time.now
 users = DB[:users]
 users_ids = []
 USERS_COUNT.times { users_ids << users.insert(login: Faker::Internet.unique.username) }
-puts "Created #{USERS_COUNT} users."
+puts "Created #{USERS_COUNT} users by #{(Time.now - started_at).round} sec."
 
+started_at = Time.now
 posts = DB[:posts]
 ip_addresses = []
 IPS_COUNT.times { ip_addresses << Faker::Internet.ip_v4_address }
@@ -33,8 +36,9 @@ POSTS_COUNT.times do
   )
   posts_ids << id if rand(10).zero? # 10% posts will have ratings
 end
-puts "Created #{POSTS_COUNT} posts."
+puts "Created #{POSTS_COUNT} posts #{(Time.now - started_at).round} sec."
 
+started_at = Time.now
 ratings = DB[:ratings]
 RATINGS_COUNT.times do
   ratings.insert(
@@ -42,7 +46,7 @@ RATINGS_COUNT.times do
     rating: rand(1..5)
   )
 end
-puts "Created #{RATINGS_COUNT} ratings."
+puts "Created #{RATINGS_COUNT} ratings #{(Time.now - started_at).round} sec."
 
 DB << <<-SQL
   update posts 
@@ -56,3 +60,4 @@ DB << <<-SQL
   AS rat 
   where rat.post_id = posts.id;
 SQL
+puts Time.now

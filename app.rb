@@ -86,6 +86,11 @@ class App < Roda
     puts r.inspect
     puts r.params
 
+    r.get '/' do
+      puts "/a"
+      "{ data: OK }"
+    end
+
     r.on 'api' do # /api branch
       r.on 'v1' do # /api/v1 branch
         r.on 'posts' do # /api/v1/posts branch
