@@ -141,8 +141,6 @@ class App < Roda
             rating = r.params['rating']
             limit = r.params['limit'].to_i
 
-            puts "#{rating} #{limit}"
-
             query = <<-SQL
               select id, round(ratings_sum * 1.0 / ratings_count, 3) rating, title, content
               from posts 
@@ -150,14 +148,8 @@ class App < Roda
                 and round(ratings_sum * 1.0 / ratings_count, 5)::VARCHAR 
                 like '#{rating}%'
             SQL
-            puts query
             query += " limit #{limit}" if limit.positive?
-
-            puts query
-
-            posts = DB.fetch query
-
-            puts posts.inspect
+            posts = DB.fetch(query)
             posts_a = posts.map do |post|
               "{ post_id: #{post[:id]}, rating: %0.#{RATING_PRECISION}f, title: #{post[:title]}, content: #{post[:content]} }" % post[:rating]
             end.join(",\n")
