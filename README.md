@@ -10,6 +10,12 @@ curl -H "Content-Type: application/json" -d '{"title":"post_title", "content":"p
 
 curl -H "Content-Type: application/json" -X PUT -d '{"rate":"5"}' http://localhost:9292/api/v1/posts/19
 curl -H "Content-Type: application/json" -X PUT -d '{"rate":"2"}' http://localhost:9292/api/v1/posts/33
+curl -H "Content-Type: application/json" -X PUT -d '{"rate":"4"}' http://localhost:9292/api/v1/posts/108
+curl -X POST -H "Content-Type: application/json" -d '{"title":"post title 1", "content":"post content 2", "user_login":"robby", "user_ip":"192.168.1.101"}' http://localhost:9292/api/v1/posts/create
+curl -X POST -H "Content-Type: application/json" -d '{"title":"post title 2", "content":"post content 2", "user_login":"robby", "user_ip":"192.168.1.102"}' http://localhost:9292/api/v1/posts/create
+curl -H "Content-Type: application/json" "http://localhost:9292/api/v1/posts/ip_authors"
+curl -H "Content-Type: application/json" "http://localhost:9292/api/v1/posts?limit=&rating=2"
+
 
 
 curl -w "%{time_total}\n" -X PUT -d 'rate=2' http://localhost:9292/api/v1/posts/567
