@@ -43,8 +43,7 @@
 
 ### Roda + Sequel
 Для реализации выбран фреймворк Roda (1. самый призводительный после rake, 2. интересно было с ним поработать, т.к. ранее много о нем слышал, но не тестировал)
-Для работы с БД выбрана библиотека Sequel того же автора. Она немного облегчит работ
-у с моделями и позвоит сократить код.
+Для работы с БД выбрана библиотека Sequel того же автора. Она немного облегчит работу с моделями и позвоит сократить код.
 
 
 # Подготовка и запуск
@@ -56,6 +55,14 @@ PGDATABASE=api
 PGUSER=api
 PGPASSWORD=api_pwd
 ```
+```
+$ sudo -u postgres psql
+# create user api with password 'api_pwd';
+# create database api owner api;
+```
+
+
+
 Для работы нужно создать пользователя БД, задать ему пароль, создать БД.
 Затем запустить миграции `rake db:migrate` и заселить первоначальные данные `rake db:seed`.
 С помощью генератора данных `Faker` будет сделано:
@@ -97,7 +104,7 @@ $ curl -H "Content-Type: application/json" "http://localhost:9292/api/v1/posts?l
 { post_id: 104, rating: 2.50000, title: post title, content: post_content } ] } }
 ```
 
-  4. Получить список айпи, с которых постило несколько разных авторов.
+  4. Получить список ip, с которых постило несколько разных авторов.
 ```$ curl -H "Content-Type: application/json" "http://localhost:9292/api/v1/posts/ip_authors"
 
 { data: { ips: [ { ip: 64.176.52.175, authors: ["roderick", "stuart_littel"] },
@@ -123,7 +130,16 @@ $ curl -H "Content-Type: application/json" "http://localhost:9292/api/v1/posts?l
 # Что не сделано
 
 1. Тестирование. Только подбираюсь к нему.
-2. Сервис возвращает либо корректные данные м статус 200, либо ничего и статус 404. Нужно выделить render для success и error вариантов.
+2. Сервис возвращает либо корректные данные и статус 200, либо ничего и статус 404. Нужно выделить render для success и error вариантов.
 3. Не стал выделять модели в отдельные файлы, не стал пока переносить логику в модели
 
 Планирую продолжить дорабатывать закончить этот проект ориентировочно 16.10.2020.
+
+
+
+create index on posts USING gist (ip inet_ops);
+
+
+https://fooobar.com/questions/395416/writing-unit-tests-in-ruby-for-a-rest-api
+https://ruby-doc.org/stdlib-2.1.2/libdoc/test/unit/rdoc/Test/Unit.html
+http://sinatrarb.com/testing.html

@@ -10,3 +10,4 @@ gem 'sequel', '>= 5'
 gem 'sequel_pg', '>= 1.8'
 
 gem 'faker'
+gem 'rack-test'

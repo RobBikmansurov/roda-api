@@ -14,64 +14,70 @@ DB = Sequel.connect(adapter: 'postgres',
                     user: ENV['PGUSER'],
                     password: ENV['PGPASSWORD'])
 
-class Post < Sequel::Model
-  many_to_one :user
+if DB.table_exists?(:posts)
+  class Post < Sequel::Model
+    many_to_one :user
 
-  def validate
-    super
-    validates_presence %i[title content user_id ip]
-  end
+    def validate
+      super
+      validates_presence %i[title content user_id ip]
+    end
 
-  def rating
-    return 0 unless ratings_count.positive?
+    def rating
+      return 0 unless ratings_count.positive?
 
-    (ratings_sum / ratings_count.to_f).round(RATING_PRECISION)
-  end
+      (ratings_sum / ratings_count.to_f).round(RATING_PRECISION)
+    end
 
-  def to_json(*_args)
-    "{
-      id: #{id},
-      title: #{title},
-      content: #{content},
-      rating: #{rating},
-      ip: #{ip},
-      user: #{user.to_json}
-    }"
-  end
-end
-
-class User < Sequel::Model
-  one_to_many :posts
-
-  def validate
-    super
-    validates_presence [:login]
-    validates_unique(:login)
-  end
-
-  def self.find_by_login_or_create(login)
-    user = User.where(login: login).first
-    return user.id unless user.nil?
-
-    user = User.new(login: login)
-    return nil unless user.valid?
-
-    user.save
-    user.id
-  end
-
-  def to_json(*_args)
-    "{ id: #{id}, login: #{login} }"
+    def to_json(*_args)
+      "{
+        id: #{id},
+        title: #{title},
+        content: #{content},
+        rating: #{rating},
+        ip: #{ip},
+        user: #{user.to_json}
+      }"
+    end
   end
 end
 
-class Rating < Sequel::Model
-  one_to_many :posts
+if DB.table_exists?(:users)
+  class User < Sequel::Model
+    one_to_many :posts
 
-  def validate
-    super
-    validates_presence %i[post_id rating]
-    validates_includes RATING_RANGE, :rating
+    def validate
+      super
+      validates_presence [:login]
+      validates_unique(:login)
+    end
+
+    def self.find_by_login_or_create(login)
+      user = User.where(login: login).first
+      return user.id unless user.nil?
+
+      user = User.new(login: login)
+      return nil unless user.valid?
+
+      user.save
+      user.id
+    end
+
+    def to_json(*_args)
+      "{ id: #{id}, login: #{login} }"
+    end
+  end
+end
+
+if DB.table_exists?(:ratings)
+  class Rating < Sequel::Model
+    one_to_many :posts
+
+    def validate
+      super
+      validates_presence %i[post_id rating]
+      validates_includes RATING_RANGE, :rating
+    end
   end
 end
 
@@ -86,8 +92,7 @@ class App < Roda
     puts r.inspect
     puts r.params
 
-    r.get '/' do
-      puts "/a"
+    r.root do
       "{ data: OK }"
     end
 
@@ -117,7 +122,6 @@ class App < Roda
               content: r.params['content'],
               ip: r.params['user_ip']
             )
-
             if post.valid?
               post.save
               "{ data: { post: #{post.to_json} } }\n"
@@ -136,10 +140,9 @@ class App < Roda
               group by ip 
               HAVING p.count > 1;
             SQL
-            ips = DB.fetch(query)
-            ips_a = ips.map { |ip| "{ ip: #{ip[:ip]}, authors: #{ip[:authors]} }" }.join(",\n")
+            ips_array = DB.fetch(query).map { |ip| "{ ip: #{ip[:ip]}, authors: #{ip[:authors]} }" }.join(",\n")
 
-            "{ data: { ips: [ #{ips_a} ] } }\n"
+            "{ data: { ips: [ #{ips_array} ] } }\n"
           end
 
           r.get do # GET /api/v1/posts?rating=4.5&limit=10

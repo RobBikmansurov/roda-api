@@ -9,6 +9,8 @@ GEM
       concurrent-ruby (~> 1.0)
     pg (1.2.3)
     rack (2.2.3)
+    rack-test (1.1.0)
+      rack (>= 1.0, < 3)
     roda (3.36.0)
       rack
     sequel (5.37.0)
@@ -22,6 +24,7 @@ PLATFORMS
 DEPENDENCIES
   dotenv
   faker
+  rack-test
   roda (~> 3.36)
   sequel (>= 5)
   sequel_pg (>= 1.8)
