@@ -11,7 +11,7 @@ GEM
     rack (2.2.3)
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
-    roda (3.36.0)
+    roda (3.37.0)
       rack
     sequel (5.37.0)
     sequel_pg (1.14.0)
