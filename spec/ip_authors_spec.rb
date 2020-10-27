@@ -1,5 +1,7 @@
-require "test/unit"
-require "rack/test"
+# frozen_string_literal: true
+
+require 'test/unit'
+require 'rack/test'
 
 require './app.rb'
 
@@ -14,7 +16,7 @@ class IpAuthorsTest < Test::Unit::TestCase
 
   def test_response_is_ok
     get '/'
-    
+
     assert last_response.ok?
     assert_equal last_response.body, '{ data: OK }'
   end

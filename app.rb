@@ -18,6 +18,82 @@ if DB.table_exists?(:posts)
   class Post < Sequel::Model
     many_to_one :user
 
+    def self.post_rating(post_id:, rate:)
+      post = Post[post_id]
+      rating = Rating.new(post_id: post.id, rating: rate)
+      if rating.valid?
+        rating.save
+        post.update(ratings_sum: (post.ratings_sum + rate),
+                    ratings_count: (post.ratings_count + 1))
+        JSON.dump({
+                    "data":
+                      { "post_id": post.id.to_s,
+                        "rating": post.rating.to_s }
+                  })
+      end
+    end
+
+    def self.post_create(params)
+      user_id = User.find_by_login_or_create(params['user_login'])
+
+      post = Post.new(
+        user_id: user_id,
+        title: params['title'],
+        content: params['content'],
+        ip: params['user_ip']
+      )
+      if post.valid?
+        post.save
+        "{\"data\": #{post.to_json}}"
+      end
+    end
+
+    def self.posts_by_rating(rating:, limit:)
+      query = <<-SQL
+        select id, round(ratings_sum * 1.0 / ratings_count, 3) rating, title, content
+        from posts 
+        where ratings_count > 0 
+          and round(ratings_sum * 1.0 / ratings_count, 5)::VARCHAR 
+          like '#{rating}%'
+      SQL
+      query += " limit #{limit}" if limit.positive?
+      posts = DB.fetch(query)
+      posts_a = posts.map do |post|
+        Post.with_rating_to_json(post)
+      end.join(",\n")
+
+      "{\"data\": {\"posts\": [\n#{posts_a} ] } }\n"
+    end
+
+    def self.with_rating_to_json(post)
+      puts post
+      JSON.dump({
+                  "post": {
+                    "id": (post[:id]).to_s,
+                    "rating": ("%0.#{RATING_PRECISION}f" % post[:rating]).to_s,
+                    "title": (post[:title]).to_s,
+                    "content": (post[:content]).to_s
+                  }
+                })
+    end
+
+    def self.ip_authors
+      query = <<-SQL
+        select ip, array_agg(login) authors, count(*) 
+        from (
+          select ip, user_id 
+          from posts 
+          group by ip, user_id
+        ) p
+        JOIN users ON p.user_id=users.id 
+        group by ip 
+        HAVING p.count > 1;
+      SQL
+      ips_array = DB.fetch(query).map { |ip| "{\"ip\": \"#{ip[:ip]}\", \"authors\": #{ip[:authors]}}" }.join(",\n")
+
+      "{\"data\": {\"ips\": [\n#{ips_array} ] }}\n"
+    end
+
     def validate
       super
       validates_presence %i[title content user_id ip]
@@ -30,14 +106,16 @@ if DB.table_exists?(:posts)
     end
 
     def to_json(*_args)
-      "{
-        id: #{id},
-        title: #{title},
-        content: #{content},
-        rating: #{rating},
-        ip: #{ip},
-        user: #{user.to_json}
-      }"
+      JSON.dump({
+                  "post": {
+                    "id": id.to_s,
+                    "title": title.to_s,
+                    "content": content.to_s,
+                    "rating": rating.to_s,
+                    "ip": ip.to_s,
+                    "user": user.to_json
+                  }
+                })
     end
   end
 end
@@ -64,7 +142,7 @@ if DB.table_exists?(:users)
     end
 
     def to_json(*_args)
-      "{ id: #{id}, login: #{login} }"
+      JSON.dump({ "id": id.to_s, "login": login.to_s })
     end
   end
 end
@@ -89,11 +167,11 @@ class App < Roda
   route do |r|
     response['Content-Type'] = 'application/json'
 
-    puts r.inspect
-    puts r.params
+    # puts r.inspect
+    # puts r.params
 
     r.root do
-      "{ data: OK }"
+      '{ data: OK }'
     end
 
     r.on 'api' do # /api branch
@@ -101,68 +179,20 @@ class App < Roda
         r.on 'posts' do # /api/v1/posts branch
           r.on Integer do |post_id|
             r.put do # PUT /api/v1/posts/:id/ -d {"rate":":rate"}
-              rate = r.params['rate'].to_i
-              post = Post[post_id]
-              rating = Rating.new(post_id: post.id, rating: rate)
-              if rating.valid?
-                rating.save
-                post.update(ratings_sum: (post.ratings_sum + rate),
-                            ratings_count: (post.ratings_count + 1))
-                "{ data: { post_id: #{post.id}, rating: #{post.rating} } }\n"
-              end
+              Post.post_rating(rate: r.params['rate'].to_i, post_id: post_id)
             end
           end
 
           r.post 'create' do # POST /api/vi/posts/create
-            user_id = User.find_by_login_or_create(r.params['user_login'])
-
-            post = Post.new(
-              user_id: user_id,
-              title: r.params['title'],
-              content: r.params['content'],
-              ip: r.params['user_ip']
-            )
-            if post.valid?
-              post.save
-              "{ data: { post: #{post.to_json} } }\n"
-            end
+            Post.post_create(r.params)
           end
 
           r.get 'ip_authors' do # GET /api/v1/posts/ip_authors
-            query = <<-SQL
-              select ip, array_agg(login) authors, count(*) 
-              from (
-                select ip, user_id 
-                from posts 
-                group by ip, user_id
-              ) p
-              JOIN users ON p.user_id=users.id 
-              group by ip 
-              HAVING p.count > 1;
-            SQL
-            ips_array = DB.fetch(query).map { |ip| "{ ip: #{ip[:ip]}, authors: #{ip[:authors]} }" }.join(",\n")
-
-            "{ data: { ips: [ #{ips_array} ] } }\n"
+            Post.ip_authors
           end
 
           r.get do # GET /api/v1/posts?rating=4.5&limit=10
-            rating = r.params['rating']
-            limit = r.params['limit'].to_i
-
-            query = <<-SQL
-              select id, round(ratings_sum * 1.0 / ratings_count, 3) rating, title, content
-              from posts 
-              where ratings_count > 0 
-                and round(ratings_sum * 1.0 / ratings_count, 5)::VARCHAR 
-                like '#{rating}%'
-            SQL
-            query += " limit #{limit}" if limit.positive?
-            posts = DB.fetch(query)
-            posts_a = posts.map do |post|
-              "{ post_id: #{post[:id]}, rating: %0.#{RATING_PRECISION}f, title: #{post[:title]}, content: #{post[:content]} }" % post[:rating]
-            end.join(",\n")
-
-            "{ data: { posts: [ #{posts_a} ] } }\n"
+            Post.posts_by_rating(rating: r.params['rating'], limit: r.params['limit'].to_i)
           end
         end
       end
