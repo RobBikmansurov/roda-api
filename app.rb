@@ -48,7 +48,9 @@ if DB.table_exists?(:posts)
       end
     end
 
-    def self.posts_by_rating(rating:, limit:)
+    def self.posts_by_rating(rating:, limit: 11)
+      return [422, "{\"data\": {\"posts\": [ ] } }\n"] unless RATING_RANGE.include?(rating)
+
       query = <<-SQL
         select id, round(ratings_sum * 1.0 / ratings_count, 3) rating, title, content
         from posts 
@@ -61,12 +63,11 @@ if DB.table_exists?(:posts)
       posts_a = posts.map do |post|
         Post.with_rating_to_json(post)
       end.join(",\n")
-
-      "{\"data\": {\"posts\": [\n#{posts_a} ] } }\n"
+      status = 200
+      [status, "{\"data\": {\"posts\": [\n#{posts_a} ] } }\n"]
     end
 
     def self.with_rating_to_json(post)
-      puts post
       JSON.dump({
                   "post": {
                     "id": (post[:id]).to_s,
@@ -167,12 +168,8 @@ class App < Roda
   route do |r|
     response['Content-Type'] = 'application/json'
 
-    # puts r.inspect
-    # puts r.params
-
-    r.root do
-      '{ data: OK }'
-    end
+    puts r.inspect
+    puts r.params
 
     r.on 'api' do # /api branch
       r.on 'v1' do # /api/v1 branch
@@ -192,10 +189,14 @@ class App < Roda
           end
 
           r.get do # GET /api/v1/posts?rating=4.5&limit=10
-            Post.posts_by_rating(rating: r.params['rating'], limit: r.params['limit'].to_i)
+            response.status, data = Post.posts_by_rating(rating: r.params['rating'].to_f, limit: r.params['limit'].to_i)
+            "#{data}" if response.status == 200
           end
         end
       end
+    end
+    r.root do
+      '{ "data": "OK" }'
     end
   end
 end
