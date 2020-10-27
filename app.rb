@@ -50,7 +50,6 @@ if DB.table_exists?(:posts)
 
     def self.posts_by_rating(rating:, limit: 11)
       return [422, "{\"data\": {\"posts\": [ ] } }\n"] unless RATING_RANGE.include?(rating)
-
       query = <<-SQL
         select id, round(ratings_sum * 1.0 / ratings_count, 3) rating, title, content
         from posts 
