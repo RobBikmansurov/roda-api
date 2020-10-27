@@ -21,16 +21,17 @@ if DB.table_exists?(:posts)
     def self.post_rating(post_id:, rate:)
       post = Post[post_id]
       rating = Rating.new(post_id: post.id, rating: rate)
-      if rating.valid?
-        rating.save
-        post.update(ratings_sum: (post.ratings_sum + rate),
-                    ratings_count: (post.ratings_count + 1))
-        JSON.dump({
-                    "data":
-                      { "post_id": post.id.to_s,
-                        "rating": post.rating.to_s }
-                  })
-      end
+      return [422, "{\"data\": { } }"] unless rating.valid?
+
+      rating.save
+      post.update(ratings_sum: (post.ratings_sum + rate),
+                  ratings_count: (post.ratings_count + 1))
+      [200, JSON.dump({
+                  "data":
+                    { "post_id": post.id.to_s,
+                      "rating": post.rating.to_s }
+                })
+      ]
     end
 
     def self.post_create(params)
@@ -42,14 +43,14 @@ if DB.table_exists?(:posts)
         content: params['content'],
         ip: params['user_ip']
       )
-      if post.valid?
-        post.save
-        "{\"data\": #{post.to_json}}"
-      end
+      return [422, "{\"data\": { } }"] unless post.valid?
+
+      post.save
+      [200, "{\"data\": #{post.to_json}}"]
     end
 
     def self.posts_by_rating(rating:, limit: 11)
-      return [422, "{\"data\": {\"posts\": [ ] } }\n"] unless RATING_RANGE.include?(rating)
+      return [422, "{\"data\": {\"posts\": [ ] } }"] unless RATING_RANGE.include?(rating)
       query = <<-SQL
         select id, round(ratings_sum * 1.0 / ratings_count, 3) rating, title, content
         from posts 
@@ -62,8 +63,7 @@ if DB.table_exists?(:posts)
       posts_a = posts.map do |post|
         Post.with_rating_to_json(post)
       end.join(",\n")
-      status = 200
-      [status, "{\"data\": {\"posts\": [\n#{posts_a} ] } }\n"]
+      [200, "{\"data\": {\"posts\": [\n#{posts_a} ] } }\n"]
     end
 
     def self.with_rating_to_json(post)
@@ -175,12 +175,14 @@ class App < Roda
         r.on 'posts' do # /api/v1/posts branch
           r.on Integer do |post_id|
             r.put do # PUT /api/v1/posts/:id/ -d {"rate":":rate"}
-              Post.post_rating(rate: r.params['rate'].to_i, post_id: post_id)
+              response.status, data = Post.post_rating(rate: r.params['rate'].to_i, post_id: post_id)
+              "#{data}\n" if response.status == 200
             end
           end
 
           r.post 'create' do # POST /api/vi/posts/create
-            Post.post_create(r.params)
+            response.status, data = Post.post_create(r.params)
+            "#{data}\n" if response.status == 200
           end
 
           r.get 'ip_authors' do # GET /api/v1/posts/ip_authors
