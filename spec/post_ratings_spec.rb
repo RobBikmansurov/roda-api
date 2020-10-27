@@ -1,5 +1,7 @@
-require "test/unit"
-require "rack/test"
+# frozen_string_literal: true
+
+require 'test/unit'
+require 'rack/test'
 
 require './app.rb'
 
@@ -16,7 +18,7 @@ class PostRatingsTest < Test::Unit::TestCase
     get '/api/v1/posts'
     #            rating = r.params['rating']
     #        limit = r.params['limit'].to_i'
-    
+
     assert last_response.ok?
     assert_equal last_response.body, "{ data: { posts: [  ] } }\n"
   end
