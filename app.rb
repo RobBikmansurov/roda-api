@@ -21,17 +21,16 @@ if DB.table_exists?(:posts)
     def self.post_rating(post_id:, rate:)
       post = Post[post_id]
       rating = Rating.new(post_id: post.id, rating: rate)
-      return [422, "{\"data\": { } }"] unless rating.valid?
+      return [422, '{"data": { } }'] unless rating.valid?
 
       rating.save
       post.update(ratings_sum: (post.ratings_sum + rate),
                   ratings_count: (post.ratings_count + 1))
       [200, JSON.dump({
-                  "data":
-                    { "post_id": post.id.to_s,
-                      "rating": post.rating.to_s }
-                })
-      ]
+                        "data":
+                          { "post_id": post.id.to_s,
+                            "rating": post.rating.to_s }
+                      })]
     end
 
     def self.post_create(params)
@@ -43,14 +42,15 @@ if DB.table_exists?(:posts)
         content: params['content'],
         ip: params['user_ip']
       )
-      return [422, "{\"data\": { } }"] unless post.valid?
+      return [422, '{"data": { } }'] unless post.valid?
 
       post.save
       [200, "{\"data\": #{post.to_json}}"]
     end
 
     def self.posts_by_rating(rating:, limit: 11)
-      return [422, "{\"data\": {\"posts\": [ ] } }"] unless RATING_RANGE.include?(rating)
+      return [422, '{"data": {"posts": [ ] } }'] unless RATING_RANGE.include?(rating)
+
       query = <<-SQL
         select id, round(ratings_sum * 1.0 / ratings_count, 3) rating, title, content
         from posts 
@@ -191,7 +191,7 @@ class App < Roda
 
           r.get do # GET /api/v1/posts?rating=4.5&limit=10
             response.status, data = Post.posts_by_rating(rating: r.params['rating'].to_f, limit: r.params['limit'].to_i)
-            "#{data}" if response.status == 200
+            data.to_s if response.status == 200
           end
         end
       end

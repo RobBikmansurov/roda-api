@@ -4,7 +4,7 @@
 Sequel.migration do
   change do
     alter_table(:posts) do
-      add_index :ip, opts: {using: :gist}
+      add_index :ip, opts: { using: :gist }
     end
   end
 end
