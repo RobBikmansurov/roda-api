@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative './test_spec.rb'
+
 class IpAuthorsTest < Test::Unit::TestCase
   include Rack::Test::Methods
 
