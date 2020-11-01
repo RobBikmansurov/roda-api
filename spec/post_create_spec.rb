@@ -16,7 +16,7 @@ class PostCreateTest < Test::Unit::TestCase
     post '/api/v1/posts/create', title: 'NEW_POST', content: 'CREATE_CONTENT', user_login: login, user_ip: '8.8.8.8'
 
     assert last_response.ok?
-    assert last_response.body.include? 'CREATE_POST'
+    assert last_response.body.include? 'NEW_POST'
     assert last_response.body.include? 'CREATE_CONTENT'
     assert last_response.body.include? '8.8.8.8'
     assert last_response.body.include? login
