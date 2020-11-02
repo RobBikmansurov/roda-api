@@ -18,67 +18,68 @@ if DB.table_exists?(:posts)
   class Post < Sequel::Model
     many_to_one :user
 
-    def self.post_rating(post_id:, rate:)
-      post = Post[post_id]
-      rating = Rating.new(post_id: post.id, rating: rate)
-      return [422, '{"data": { } }'] unless rating.valid?
+    class << self
+      def post_rating(post_id:, rate:)
+        post = Post[post_id]
+        rating = Rating.new(post_id: post.id, rating: rate)
+        return [422, '{"data": { } }'] unless rating.valid?
 
-      rating.save
-      post.update(ratings_sum: (post.ratings_sum + rate),
-                  ratings_count: (post.ratings_count + 1))
-      [200, JSON.dump({
-                        "data":
-                          { "post_id": post.id.to_s,
-                            "rating": post.rating.to_s }
-                      })]
-    end
+        rating.save
+        post.update(ratings_sum: (post.ratings_sum + rate),
+                    ratings_count: (post.ratings_count + 1))
+        [200, JSON.dump({
+                          "data":
+                            { "post_id": post.id.to_s,
+                              "rating": post.rating.to_s }
+                        })]
+      end
 
-    def self.post_create(params)
-      user_id = User.find_by_login_or_create(params['user_login'])
+      def post_create(params)
+        user_id = User.find_by_login_or_create(params['user_login'])
 
-      post = Post.new(
-        user_id: user_id,
-        title: params['title'],
-        content: params['content'],
-        ip: params['user_ip']
-      )
-      return [422, '{"data": { } }'] unless post.valid?
+        post = Post.new(
+          user_id: user_id,
+          title: params['title'],
+          content: params['content'],
+          ip: params['user_ip']
+        )
+        return [422, '{"data": { } }'] unless post.valid?
 
-      post.save
-      [200, "{\"data\": #{post.to_json}}"]
-    end
+        post.save
+        [200, "{\"data\": #{post.to_json}}"]
+      end
 
-    def self.posts_by_rating(rating:, limit: 11)
-      return [422, '{"data": {"posts": [ ] } }'] unless RATING_RANGE.include?(rating)
+      def posts_by_rating(rating:, limit: 11)
+        return [422, '{"data": {"posts": [ ] } }'] unless RATING_RANGE.include?(rating)
 
-      query = <<-SQL
+        query = <<-SQL
         select id, round(ratings_sum * 1.0 / ratings_count, 3) rating, title, content
         from posts 
         where ratings_count > 0 
           and round(ratings_sum * 1.0 / ratings_count, 5)::VARCHAR 
           like '#{rating}%'
-      SQL
-      query += " limit #{limit}" if limit.positive?
-      posts = DB.fetch(query)
-      posts_a = posts.map do |post|
-        Post.with_rating_to_json(post)
-      end.join(",\n")
-      [200, "{\"data\": {\"posts\": [\n#{posts_a} ] } }\n"]
-    end
+        SQL
+        query += " limit #{limit}" if limit.positive?
+        posts = DB.fetch(query)
+        posts_a = posts.map do |post|
+          Post.with_rating_to_json(post)
+        end.join(",\n")
+        [200, "{\"data\": {\"posts\": [\n#{posts_a} ] } }\n"]
+      end
 
-    def self.with_rating_to_json(post)
-      JSON.dump({
-                  "post": {
-                    "id": (post[:id]).to_s,
-                    "rating": ("%0.#{RATING_PRECISION}f" % post[:rating]).to_s,
-                    "title": (post[:title]).to_s,
-                    "content": (post[:content]).to_s
-                  }
-                })
-    end
+      def with_rating_to_json(post)
+        JSON.dump({
+                    "post": {
+                      "id": (post[:id]).to_s,
+                      "rating": ("%0.#{RATING_PRECISION}f" % post[:rating]).to_s,
+                      "title": (post[:title]).to_s,
+                      "content": (post[:content]).to_s
+                    }
+                  })
+      end
 
-    def self.ip_authors
-      query = <<-SQL
+      def ip_authors
+        query = <<-SQL
         select ip, array_agg(login) authors, count(*) 
         from (
           select ip, user_id 
@@ -88,10 +89,11 @@ if DB.table_exists?(:posts)
         JOIN users ON p.user_id=users.id 
         group by ip 
         HAVING p.count > 1;
-      SQL
-      ips_array = DB.fetch(query).map { |ip| "{\"ip\": \"#{ip[:ip]}\", \"authors\": #{ip[:authors]}}" }.join(",\n")
+        SQL
+        ips_array = DB.fetch(query).map { |ip| "{\"ip\": \"#{ip[:ip]}\", \"authors\": #{ip[:authors]}}" }.join(",\n")
 
-      "{\"data\": {\"ips\": [\n#{ips_array} ] }}\n"
+        "{\"data\": {\"ips\": [\n#{ips_array} ] }}\n"
+      end
     end
 
     def validate
@@ -124,12 +126,6 @@ if DB.table_exists?(:users)
   class User < Sequel::Model
     one_to_many :posts
 
-    def validate
-      super
-      validates_presence [:login]
-      validates_unique(:login)
-    end
-
     def self.find_by_login_or_create(login)
       user = User.where(login: login).first
       return user.id unless user.nil?
@@ -139,6 +135,12 @@ if DB.table_exists?(:users)
 
       user.save
       user.id
+    end
+
+    def validate
+      super
+      validates_presence [:login]
+      validates_unique(:login)
     end
 
     def to_json(*_args)
