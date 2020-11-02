@@ -21,7 +21,7 @@ if DB.table_exists?(:posts)
     class << self
       def post_rating(post_id:, rate:)
         post = Post[post_id]
-        rating = Rating.new(post_id: post.id, rating: rate)
+        rating = Rating.new(post_id: post_id, rating: rate)
         return [422, '{"data": { } }'] unless rating.valid?
 
         rating.save
@@ -29,7 +29,7 @@ if DB.table_exists?(:posts)
                     ratings_count: (post.ratings_count + 1))
         [200, JSON.dump({
                           "data":
-                            { "post_id": post.id.to_s,
+                            { "post_id": post_id.to_s,
                               "rating": post.rating.to_s }
                         })]
       end
@@ -70,10 +70,10 @@ if DB.table_exists?(:posts)
       def with_rating_to_json(post)
         JSON.dump({
                     "post": {
-                      "id": (post[:id]).to_s,
-                      "rating": ("%0.#{RATING_PRECISION}f" % post[:rating]).to_s,
-                      "title": (post[:title]).to_s,
-                      "content": (post[:content]).to_s
+                      "id": post[:id],
+                      "rating": "%0.#{RATING_PRECISION}f" % post[:rating],
+                      "title": post[:title],
+                      "content": post[:content]
                     }
                   })
       end
@@ -110,11 +110,11 @@ if DB.table_exists?(:posts)
     def to_json(*_args)
       JSON.dump({
                   "post": {
-                    "id": id.to_s,
-                    "title": title.to_s,
-                    "content": content.to_s,
-                    "rating": rating.to_s,
-                    "ip": ip.to_s,
+                    "id": id,
+                    "title": title,
+                    "content": content,
+                    "rating": rating,
+                    "ip": ip,
                     "user": user.to_json
                   }
                 })
@@ -144,7 +144,7 @@ if DB.table_exists?(:users)
     end
 
     def to_json(*_args)
-      JSON.dump({ "id": id.to_s, "login": login.to_s })
+      JSON.dump({ "id": id, "login": login })
     end
   end
 end
@@ -184,7 +184,7 @@ class App < Roda
 
           r.post 'create' do # POST /api/vi/posts/create
             response.status, data = Post.post_create(r.params)
-            "#{data}\n" if response.status == 200
+            data if response.status == 200
           end
 
           r.get 'ip_authors' do # GET /api/v1/posts/ip_authors
@@ -193,7 +193,7 @@ class App < Roda
 
           r.get do # GET /api/v1/posts?rating=4.5&limit=10
             response.status, data = Post.posts_by_rating(rating: r.params['rating'].to_f, limit: r.params['limit'].to_i)
-            data.to_s if response.status == 200
+            data if response.status == 200
           end
         end
       end
