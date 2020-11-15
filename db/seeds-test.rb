@@ -5,7 +5,7 @@ require 'faker'
 require 'dotenv/load'
 
 USERS_COUNT = 100
-POSTS_COUNT = 200_000
+POSTS_COUNT = 200
 RATINGS_COUNT = POSTS_COUNT / 3
 IPS_COUNT = 50
 
