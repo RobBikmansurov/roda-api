@@ -1,3 +1,5 @@
+![Ruby](https://github.com/RobBikmansurov/roda-api/workflows/Ruby/badge.svg)
+
 # Roda Json Api
 `rake db:migrate`
 `rake db:seed` # initial population with data for performance testing

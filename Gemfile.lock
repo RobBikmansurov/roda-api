@@ -11,6 +11,7 @@ GEM
     rack (2.2.3)
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
+    rake (13.0.1)
     roda (3.37.0)
       rack
     sequel (5.37.0)
@@ -25,6 +26,7 @@ DEPENDENCIES
   dotenv
   faker
   rack-test
+  rake
   roda (~> 3.36)
   sequel (>= 5)
   sequel_pg (>= 1.8)
